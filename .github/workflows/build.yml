@@ -48,6 +48,8 @@ jobs:
           -DGGML_CPU_HAS_AVX=OFF ^
           -DGGML_CPU_HAS_AVX2=OFF ^
           -DLLAMA_CURL=OFF ^
+          -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601" ^
+          -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" ^
           -G "MinGW Makefiles"
         mingw32-make -C . -j4 llama-server
 
