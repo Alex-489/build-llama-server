@@ -29,26 +29,15 @@ jobs:
         Expand-Archive cmake.zip -DestinationPath C:\
         echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
-    - name: Replace ggml-cpu.c with Win7-compatible version
+    - name: Fix ggml-cpu.c (disable Win10-only code)
       run: |
-        $fixed_code = @'
-// Fixed version of ggml-cpu.c for Windows 7 compatibility
-#include "ggml-cpu.h"
-// ... остальной код из оригинала ...
-#ifdef _WIN32
-    if (win_ver >= kWinVersionWin10) {
-        // ПАТЧ: отключено для совместимости с Windows 7
-        // THREAD_POWER_THROTTLING_STATE t;
-        // t.Version     = THREAD_POWER_THROTTLING_CURRENT_VERSION;
-        // t.ControlMask = THREAD_POWER_THROTTLING_EXECUTION_SPEED;
-        // t.StateMask   = 0;
-        // SetThreadInformation(hThread, ThreadPowerThrottling, &t, sizeof(t));
-    }
-#endif
-// ... продолжение оригинального файла ...
-'@
-        # Сохраним исправленный файл
-        Set-Content "ggml/src/ggml-cpu/ggml-cpu.c" $fixed_code -Encoding UTF8
+        $file = "ggml/src/ggml-cpu/ggml-cpu.c"
+        $content = Get-Content $file -Raw
+        # Просто заменяем весь блок с THREAD_POWER_THROTTLING_STATE на заглушку
+        $patched = $content -replace `
+          'if \(win_ver >= kWinVersionWin10\) \{[\s\S]*?\}', `
+          'if (false) { // Disabled for Win7 compatibility }'
+        Set-Content $file $patched -Encoding UTF8
 
     - name: Verify tools
       run: |
