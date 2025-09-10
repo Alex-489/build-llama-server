@@ -16,15 +16,15 @@ jobs:
         repository: ggerganov/llama.cpp
         submodules: recursive
 
-    - name: Install winlibs MinGW-w64 (gcc 11.2.0, Win7-compatible)
+    - name: Install winlibs MinGW-w64 (gcc 11.2.0)
       run: |
-        # Скачиваем winlibs — лучший выбор для Windows 7
+        # Скачиваем winlibs — лучший выбор для Win7
         Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.2.0-12.0.1-9.0.0-r1/winlibs-x86_64-posix-seh-gcc-11.2.0-mingw-w64-9.0.0-r1.7z -OutFile mingw.7z
         choco install 7zip -y
         7z x mingw.7z -oC:\mingw64
         echo "C:\mingw64\bin" >> $env:GITHUB_PATH
 
-    - name: Install CMake 3.24.3 (Win7-safe)
+    - name: Install CMake
       run: |
         Invoke-WebRequest -Uri https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip -OutFile cmake.zip
         Expand-Archive cmake.zip -DestinationPath C:\
@@ -51,13 +51,12 @@ jobs:
           -DGGML_CPU_HAS_AVX=OFF ^
           -DGGML_CPU_HAS_AVX2=OFF ^
           -DLLAMA_CURL=OFF ^
-          -DCMAKE_C_FLAGS="-D_WIN32_WINNT=0x0601" ^
-          -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601" ^
+          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" ^
           -G "MinGW Makefiles"
         mingw32-make -C . -j4 llama-server
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: llama-server-win7.exe
+        name: llama-server-win7-static.exe
         path: ./build/bin/llama-server.exe
