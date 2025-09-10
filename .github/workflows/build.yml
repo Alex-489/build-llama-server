@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # ✅ Вместо windows-2019
+    runs-on: windows-latest
 
     steps:
     - name: Checkout llama.cpp
@@ -16,19 +16,15 @@ jobs:
         repository: ggerganov/llama.cpp
         submodules: recursive
 
-    - name: Install CMake
+    - name: Install dependencies
       run: |
-        Invoke-WebRequest -Uri https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip -OutFile cmake.zip
-        Expand-Archive cmake.zip -DestinationPath C:\
-        Remove-Item cmake.zip
-        $env:Path += ";C:\cmake-3.24.3-windows-x86_64\bin"
-        [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
-
-    - name: Install MinGW-w64 via Chocolatey
-      run: |
-        choco install mingw --version=11.2.0 -y
+        choco install cmake mingw -y
         $env:Path += ";C:\tools\mingw64\bin"
         [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+
+    - name: Verify tools
+      run: |
+        cmake --version
         gcc --version
         mingw32-make --version
 
