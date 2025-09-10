@@ -18,30 +18,29 @@ jobs:
 
     - name: Install winlibs MinGW-w64 (gcc 11.2.0)
       run: |
+        # Скачиваем winlibs для совместимости с Win7
         Invoke-WebRequest -Uri https://github.com/brechtsanders/winlibs_mingw/releases/download/11.2.0-12.0.1-9.0.0-r1/winlibs-x86_64-posix-seh-gcc-11.2.0-mingw-w64-9.0.0-r1.7z -OutFile mingw.7z
         choco install 7zip -y
         7z x mingw.7z -oC:\mingw64
         echo "C:\mingw64\bin" >> $env:GITHUB_PATH
 
-    - name: Install CMake
+    - name: Install CMake 3.24.3
       run: |
         Invoke-WebRequest -Uri https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip -OutFile cmake.zip
         Expand-Archive cmake.zip -DestinationPath C:\
         echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
-    - name: Patch ggml-cpu.c to disable Win10-only code
+    - name: Fix ggml-cpu.c (Win7 compatibility)
       run: |
         $file = "ggml/src/ggml-cpu/ggml-cpu.c"
         $content = Get-Content $file -Raw
-        # Заменяем проблемный блок на заглушку
-        $patched = $content -replace '(#ifdef _WIN32.*?if \(win_ver >= kWinVersionWin10\).*?\{[\s\S]*?\}\s*\})', '
-#ifdef _WIN32
-// Патч: отключаем THREAD_POWER_THROTTLING_STATE для Windows 7
-// if (win_ver >= kWinVersionWin10) {
-//     ...
-// }
-#endif
-        '
+        # Отключаем вызов THREAD_POWER_THROTTLING_STATE
+        $patched = $content -replace `
+          '(#ifdef _WIN32[\s\S]*?if \(win_ver >= kWinVersionWin10\)[\s\S]*?\{)', `
+          '// PATCH: disabled for Win7\n#if 0 // \1'
+        $patched = $patched -replace `
+          '(t\.StateMask\s*=\s*0;\s*\}\s*\})', `
+          '$1\n#else\n  (void)t;\n#endif'
         Set-Content $file $patched -Encoding UTF8
 
     - name: Verify tools
