@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022  # ✅ Зафиксировано на стабильной версии
+    runs-on: windows-2022
 
     steps:
     - name: Checkout llama.cpp
@@ -16,21 +16,17 @@ jobs:
         repository: ggerganov/llama.cpp
         submodules: recursive
 
-    - name: Install MinGW-w64 via Chocolatey
+    - name: Install dependencies
       run: |
-        choco install mingw --version=11.2.0 -y
+        choco install mingw cmake -y
         $env:Path += ";C:\tools\mingw64\bin"
         [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+
+    - name: Verify tools
+      run: |
         gcc --version
         mingw32-make --version
-
-    - name: Install CMake
-      run: |
-        Invoke-WebRequest -Uri https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip -OutFile cmake.zip
-        Expand-Archive cmake.zip -DestinationPath C:\
-        Remove-Item cmake.zip
-        $env:Path += ";C:\cmake-3.24.3-windows-x86_64\bin"
-        [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+        cmake --version
 
     - name: Build llama-server
       run: |
@@ -45,6 +41,7 @@ jobs:
           -DGGML_CPU_HAS_SSE3=ON ^
           -DGGML_CPU_HAS_AVX=OFF ^
           -DGGML_CPU_HAS_AVX2=OFF ^
+          -DLLAMA_CURL=OFF ^
           -G "MinGW Makefiles"
         mingw32-make -C . -j4 llama-server
 
