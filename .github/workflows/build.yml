@@ -16,11 +16,16 @@ jobs:
         repository: ggerganov/llama.cpp
         submodules: recursive
 
-    - name: Install dependencies
+    - name: Install MinGW via Chocolatey
       run: |
-        choco install mingw cmake -y
-        $env:Path += ";C:\tools\mingw64\bin"
-        [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+        choco install mingw --version=11.2.0 -y
+        echo "C:\tools\mingw64\bin" >> $env:GITHUB_PATH
+
+    - name: Install CMake
+      run: |
+        Invoke-WebRequest -Uri https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip -OutFile cmake.zip
+        Expand-Archive cmake.zip -DestinationPath C:\
+        echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
     - name: Verify tools
       run: |
@@ -28,7 +33,7 @@ jobs:
         mingw32-make --version
         cmake --version
 
-    - name: Build llama-server
+    - name: Build with MinGW
       run: |
         mkdir build
         cd build
