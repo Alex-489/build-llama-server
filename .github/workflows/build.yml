@@ -16,7 +16,7 @@ jobs:
         repository: ggerganov/llama.cpp
         submodules: recursive
 
-    - name: Install MinGW via Chocolatey
+    - name: Install MinGW
       run: |
         choco install mingw --version=11.2.0 -y
         echo "C:\tools\mingw64\bin" >> $env:GITHUB_PATH
@@ -33,7 +33,8 @@ jobs:
         mingw32-make --version
         cmake --version
 
-    - name: Build with MinGW
+    - name: Build llama-server
+      shell: cmd
       run: |
         mkdir build
         cd build
