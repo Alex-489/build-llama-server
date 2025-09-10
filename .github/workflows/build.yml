@@ -33,9 +33,9 @@ jobs:
       run: |
         $file = "ggml/src/ggml-cpu/ggml-cpu.c"
         $content = Get-Content $file -Raw
-        # Обернем проблемный блок в #ifdef
+        # Обернем вызов THREAD_POWER_THROTTLING_STATE в условие
         $patched = $content -replace '(#ifdef _WIN32.*?if \(win_ver >= kWinVersionWin10\).*?\{)', '$1
-          // Disable THREAD_POWER_THROTTLING_STATE on Windows 7
+          #if 0 // Отключаем для Windows 7
           // if (win_ver >= kWinVersionWin10) {
         '
         $patched = $patched -replace '(t\.StateMask\s*=\s*0;\s*\}\s*\})', '}
