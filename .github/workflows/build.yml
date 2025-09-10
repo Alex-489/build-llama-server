@@ -1,0 +1,63 @@
+name: Build llama-server.exe for Windows 7
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CMAKE_URL: https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3-windows-x86_64.zip
+  LLVM_URL: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/LLVM-15.0.7-win64.exe
+
+jobs:
+  build:
+    runs-on: windows-2019  # Windows 10, но с совместимостью
+
+    steps:
+    - name: Checkout llama.cpp
+      uses: actions/checkout@v4
+      with:
+        repository: ggerganov/llama.cpp
+        ref: master
+
+    - name: Install CMake
+      run: |
+        Invoke-WebRequest -Uri $env:CMAKE_URL -OutFile cmake.zip
+        Expand-Archive cmake.zip -DestinationPath C:\
+        Remove-Item cmake.zip
+        $env:Path += ";C:\cmake-3.24.3-windows-x86_64\bin"
+        [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+
+    - name: Prepare MSYS2
+      run: |
+        choco install -y msys2
+        call "C:\tools\msys64\msys2_shell.cmd" -checkpath -no-start -c "pacman -Syu --noconfirm"
+        call "C:\tools\msys64\msys2_shell.cmd" -checkpath -no-start -c "pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make"
+
+    - name: Build with MinGW
+      run: |
+        mkdir build
+        cd build
+        set MSYSTEM=MINGW64
+        call "C:\tools\msys64\msys2_shell.cmd" -checkpath -no-start -c "
+          export PATH=/c/tools/msys64/mingw64/bin:\$PATH &&
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_BUILD_SERVER=ON \
+            -DCMAKE_SYSTEM_VERSION=6.1 \
+            -D_WIN32_WINNT=0x0601 \
+            -D__MINGW_USE_VC2005_COMPAT=ON \
+            -DGGML_CPU_HAS_SSE3=ON \
+            -DGGML_CPU_HAS_AVX=OFF \
+            -DGGML_CPU_HAS_AVX2=OFF \
+            -G 'MinGW Makefiles' &&
+          cmake --build . --target llama-server --config Release
+        "
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: llama-server-win7.exe
+        path: |
+          ./build/bin/llama-server.exe
+          !./build/bin/*.pdb
