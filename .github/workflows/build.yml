@@ -51,9 +51,14 @@ jobs:
     - name: Build llama-server
       shell: cmd
       run: |
-        mkdir llama-repo/build
-        cd llama-repo/build
+        REM Переходим в папку llama-repo
+        cd llama-repo
+        REM Создаем build-директорию
+        mkdir build
+        cd build
+        REM Запускаем CMake из правильной директории
         cmake .. ^
+          -G "MinGW Makefiles" ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DGGML_BUILD_SERVER=ON ^
           -DCMAKE_SYSTEM_VERSION=6.1 ^
@@ -63,8 +68,7 @@ jobs:
           -DGGML_CPU_HAS_AVX=OFF ^
           -DGGML_CPU_HAS_AVX2=OFF ^
           -DLLAMA_CURL=OFF ^
-          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" ^
-          -G "MinGW Makefiles"
+          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
         mingw32-make -C . -j4 llama-server
 
     - name: Upload Artifact
