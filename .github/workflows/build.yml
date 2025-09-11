@@ -29,15 +29,9 @@ jobs:
         Expand-Archive cmake.zip -DestinationPath C:\
         echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
-    - name: Fix ggml-cpu.c (disable Win10-only code)
+    - name: Replace ggml-cpu.c with Win7-compatible version
       run: |
-        $file = "ggml/src/ggml-cpu/ggml-cpu.c"
-        $content = Get-Content $file -Raw
-        # Просто заменяем весь блок с THREAD_POWER_THROTTLING_STATE на заглушку
-        $patched = $content -replace `
-          'if \(win_ver >= kWinVersionWin10\) \{[\s\S]*?\}', `
-          'if (false) { // Disabled for Win7 compatibility }'
-        Set-Content $file $patched -Encoding UTF8
+        Copy-Item patches/ggml-cpu.c.patched ggml/src/ggml-cpu/ggml-cpu.c -Force
 
     - name: Verify tools
       run: |
