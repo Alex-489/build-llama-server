@@ -10,6 +10,12 @@ jobs:
     runs-on: windows-2022
 
     steps:
+    - name: Checkout this repo (to get patches)
+      uses: actions/checkout@v4
+      with:
+        repository: Alex-489/build-llama-server
+        path: self
+
     - name: Checkout llama.cpp
       uses: actions/checkout@v4
       with:
@@ -31,7 +37,7 @@ jobs:
 
     - name: Replace ggml-cpu.c with Win7-compatible version
       run: |
-        Copy-Item patches/ggml-cpu.c.patched ggml/src/ggml-cpu/ggml-cpu.c -Force
+        Copy-Item self/patches/ggml-cpu.c.patched ggml/src/ggml-cpu/ggml-cpu.c -Force
 
     - name: Verify tools
       run: |
