@@ -29,11 +29,17 @@ jobs:
         Expand-Archive cmake.zip -DestinationPath C:\
         echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
-    - name: Patch winhttp.c to remove CreateFile2
+    - name: Patch http.cpp to replace CreateFile2 with CreateFile
       run: |
-        $file = "common/winhttp.c"
+        $file = "common/http.cpp"
         $content = Get-Content $file -Raw
-        $patched = $content -replace 'CreateFile2', 'CreateFile'
+        # Заменяем CreateFile2 на CreateFile
+        $patched = $content -replace 'CreateFile2\(', 'CreateFile('
+        # Удаляем ненужные флаги
+        $patched = $patched -replace 'FILE_FLAG_OVERLAPPED', '0'
+        $patched = $patched -replace 'FILE_FLAG_SEQUENTIAL_SCAN', '0'
+        $patched = $patched -replace 'FILE_FLAG_OPEN_REPARSE_POINT', '0'
+        $patched = $patched -replace 'FILE_FLAG_BACKUP_SEMANTICS', '0'
         Set-Content $file $patched -Encoding UTF8
 
     - name: Build llama-server
