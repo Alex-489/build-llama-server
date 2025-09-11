@@ -1,3 +1,12 @@
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+
+#ifndef __MINGW_USE_VC2005_COMPAT
+#define __MINGW_USE_VC2005_COMPAT
+#endif
+
+// ... остальной код ggml-cpu.c ...
 #define _CRT_SECURE_NO_DEPRECATE // Disables "unsafe" warnings on Windows
 #define _USE_MATH_DEFINES // For M_PI on MSVC
 
