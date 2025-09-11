@@ -16,13 +16,14 @@ jobs:
       with:
         repository: Alex-489/build-llama-server
         path: build-repo
-        token: ${{ secrets.GITHUB_TOKEN }}  # 🔑 Обязательно!
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-    # Шаг 2: Клонируем основной проект llama.cpp
+    # Шаг 2: Клонируем основной проект llama.cpp в ОТДЕЛЬНУЮ ПАПКУ
     - name: Checkout llama.cpp
       uses: actions/checkout@v4
       with:
         repository: ggerganov/llama.cpp
+        path: llama-repo  # ⚠️ Ключевое изменение: не в текущую директорию!
         submodules: recursive
 
     # Шаг 3: Устанавливаем MinGW-w64 (gcc 11.2.0) для совместимости с Win7
@@ -44,7 +45,7 @@ jobs:
     - name: Replace ggml-cpu.c with Win7-compatible version
       run: |
         if (Test-Path "build-repo/patches/ggml-cpu.c.patched") {
-            Copy-Item build-repo/patches/ggml-cpu.c.patched ggml/src/ggml-cpu/ggml-cpu.c -Force
+            Copy-Item build-repo/patches/ggml-cpu.c.patched llama-repo/ggml/src/ggml-cpu/ggml-cpu.c -Force
             Write-Host "✅ Файл ggml-cpu.c успешно заменён"
         } else {
             Write-Error "❌ Ошибка: файл build-repo/patches/ggml-cpu.c.patched не найден!"
@@ -62,8 +63,8 @@ jobs:
     - name: Build llama-server
       shell: cmd
       run: |
-        mkdir build
-        cd build
+        mkdir llama-repo/build
+        cd llama-repo/build
         cmake .. ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DGGML_BUILD_SERVER=ON ^
@@ -83,4 +84,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: llama-server-win7-static.exe
-        path: ./build/bin/llama-server.exe
+        path: ./llama-repo/build/bin/llama-server.exe
