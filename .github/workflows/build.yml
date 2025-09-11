@@ -16,7 +16,7 @@ jobs:
       with:
         repository: Alex-489/build-llama-server
         path: build-repo
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}  # 🔑 Обязательно!
 
     # Шаг 2: Клонируем основной проект llama.cpp
     - name: Checkout llama.cpp
