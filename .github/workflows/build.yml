@@ -37,10 +37,12 @@ jobs:
             $content = Get-Content $file -Raw
             # Добавляем определение Windows 7 в начало файла
             $patched = "#ifndef _WIN32_WINNT`n#define _WIN32_WINNT 0x0601 // Windows 7`n#endif`n`n" + $content
-            # Полностью заменяем проблемный блок
-            $patched = $patched -replace `
-              '(#ifdef _WIN32[\s\S]*?if \(win_ver >= kWinVersionWin10\)[\s\S]*?\{[\s\S]*?ZeroMemory\(&t, sizeof\(t\)\);)', `
-              '// PATCH: disabled for Win7 compatibility`n#if 0`n\1`n#endif'
+            # Просто закомментируем ВСЕ проблемные строки
+            $patched = $patched -replace 'THREAD_POWER_THROTTLING_STATE', '// THREAD_POWER_THROTTLING_STATE'
+            $patched = $patched -replace 'THREAD_POWER_THROTTLING_CURRENT_VERSION', '// THREAD_POWER_THROTTLING_CURRENT_VERSION'
+            $patched = $patched -replace 'THREAD_POWER_THROTTLING_EXECUTION_SPEED', '// THREAD_POWER_THROTTLING_EXECUTION_SPEED'
+            $patched = $patched -replace 'SetThreadInformation\(hThread, ThreadPowerThrottling, &t, sizeof\(t\)\);', '// SetThreadInformation(hThread, ThreadPowerThrottling, &t, sizeof(t));'
+            $patched = $patched -replace 'ZeroMemory\(&t, sizeof\(t\)\);', '// ZeroMemory(&t, sizeof(t));'
             Set-Content $file $patched -Encoding UTF8
             Write-Host "✅ Файл $file успешно патчен"
         } else {
