@@ -44,6 +44,40 @@ jobs:
         Copy-Item build-repo/patches/ggml-cpu.c.patched llama-repo/ggml/src/ggml-cpu/ggml-cpu.c -Force
         Write-Host "✅ Файл ggml-cpu.c успешно заменён"
 
+    - name: Patch http.cpp to replace CreateFile2 with CreateFile
+      run: |
+        $file = "llama-repo/common/http.cpp"
+        if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            # Заменяем CreateFile2 на CreateFile
+            $patched = $content -replace 'CreateFile2\(', 'CreateFile('
+            # Удаляем ненужные флаги
+            $patched = $patched -replace 'FILE_FLAG_OVERLAPPED', '0'
+            $patched = $patched -replace 'FILE_FLAG_SEQUENTIAL_SCAN', '0'
+            $patched = $patched -replace 'FILE_FLAG_OPEN_REPARSE_POINT', '0'
+            $patched = $patched -replace 'FILE_FLAG_BACKUP_SEMANTICS', '0'
+            Set-Content $file $patched -Encoding UTF8
+            Write-Host "✅ Файл $file успешно патчен"
+        } else {
+            Write-Host "⚠️ Файл $file не найден, пробуем другой путь"
+            $file = "llama-repo/examples/server/http.cpp"
+            if (Test-Path $file) {
+                $content = Get-Content $file -Raw
+                # Заменяем CreateFile2 на CreateFile
+                $patched = $content -replace 'CreateFile2\(', 'CreateFile('
+                # Удаляем ненужные флаги
+                $patched = $patched -replace 'FILE_FLAG_OVERLAPPED', '0'
+                $patched = $patched -replace 'FILE_FLAG_SEQUENTIAL_SCAN', '0'
+                $patched = $patched -replace 'FILE_FLAG_OPEN_REPARSE_POINT', '0'
+                $patched = $patched -replace 'FILE_FLAG_BACKUP_SEMANTICS', '0'
+                Set-Content $file $patched -Encoding UTF8
+                Write-Host "✅ Файл $file успешно патчен"
+            } else {
+                Write-Error "❌ Ошибка: файл http.cpp не найден!"
+                exit 1
+            }
+        }
+
     - name: Build llama-server
       shell: cmd
       run: |
