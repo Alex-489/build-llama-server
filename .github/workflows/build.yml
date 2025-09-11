@@ -14,6 +14,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: ggerganov/llama.cpp
+        path: llama-repo
         submodules: recursive
 
     - name: Install winlibs MinGW-w64 (gcc 11.2.0)
@@ -31,21 +32,27 @@ jobs:
 
     - name: Patch ggml-cpu.c for Windows 7 compatibility
       run: |
-        $file = "ggml/src/ggml-cpu/ggml-cpu.c"
-        $content = Get-Content $file -Raw
-        # Добавляем определение Windows 7 в начало файла
-        $patched = "#ifndef _WIN32_WINNT`n#define _WIN32_WINNT 0x0601 // Windows 7`n#endif`n`n" + $content
-        # Полностью заменяем проблемный блок на безопасную заглушку
-        $patched = $patched -replace `
-          '(#ifdef _WIN32[\s\S]*?if \(win_ver >= kWinVersionWin10\)[\s\S]*?\{[\s\S]*?ZeroMemory\(&t, sizeof\(t\)\);)', `
-          '// PATCH: disabled for Win7 compatibility`n#if 0`n\1`n#endif'
-        Set-Content $file $patched -Encoding UTF8
+        $file = "llama-repo/ggml/src/ggml-cpu/ggml-cpu.c"
+        if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            # Добавляем определение Windows 7 в начало файла
+            $patched = "#ifndef _WIN32_WINNT`n#define _WIN32_WINNT 0x0601 // Windows 7`n#endif`n`n" + $content
+            # Полностью заменяем проблемный блок
+            $patched = $patched -replace `
+              '(#ifdef _WIN32[\s\S]*?if \(win_ver >= kWinVersionWin10\)[\s\S]*?\{[\s\S]*?ZeroMemory\(&t, sizeof\(t\)\);)', `
+              '// PATCH: disabled for Win7 compatibility`n#if 0`n\1`n#endif'
+            Set-Content $file $patched -Encoding UTF8
+            Write-Host "✅ Файл $file успешно патчен"
+        } else {
+            Write-Error "❌ Ошибка: файл $file не найден!"
+            exit 1
+        }
 
     - name: Build llama-server
       shell: cmd
       run: |
-        mkdir build
-        cd build
+        mkdir llama-repo/build
+        cd llama-repo/build
         cmake .. ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DGGML_BUILD_SERVER=ON ^
@@ -64,4 +71,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: llama-server-win7-static.exe
-        path: ./build/bin/llama-server.exe
+        path: ./llama-repo/build/bin/llama-server.exe
