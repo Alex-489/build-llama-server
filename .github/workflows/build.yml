@@ -29,18 +29,23 @@ jobs:
         Expand-Archive cmake.zip -DestinationPath C:\
         echo "C:\cmake-3.24.3-windows-x86_64\bin" >> $env:GITHUB_PATH
 
-    - name: Patch http.cpp to replace CreateFile2 with CreateFile
+    - name: Patch server/http.cpp to replace CreateFile2 with CreateFile
       run: |
-        $file = "common/http.cpp"
-        $content = Get-Content $file -Raw
-        # Заменяем CreateFile2 на CreateFile
-        $patched = $content -replace 'CreateFile2\(', 'CreateFile('
-        # Удаляем ненужные флаги
-        $patched = $patched -replace 'FILE_FLAG_OVERLAPPED', '0'
-        $patched = $patched -replace 'FILE_FLAG_SEQUENTIAL_SCAN', '0'
-        $patched = $patched -replace 'FILE_FLAG_OPEN_REPARSE_POINT', '0'
-        $patched = $patched -replace 'FILE_FLAG_BACKUP_SEMANTICS', '0'
-        Set-Content $file $patched -Encoding UTF8
+        $file = "examples/server/http.cpp"
+        if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            # Заменяем CreateFile2 на CreateFile
+            $patched = $content -replace 'CreateFile2\(', 'CreateFile('
+            # Удаляем ненужные флаги
+            $patched = $patched -replace 'FILE_FLAG_OVERLAPPED', '0'
+            $patched = $patched -replace 'FILE_FLAG_SEQUENTIAL_SCAN', '0'
+            $patched = $patched -replace 'FILE_FLAG_OPEN_REPARSE_POINT', '0'
+            $patched = $patched -replace 'FILE_FLAG_BACKUP_SEMANTICS', '0'
+            Set-Content $file $patched -Encoding UTF8
+            Write-Host "✅ Файл $file успешно заменён"
+        } else {
+            Write-Host "⚠️ Файл $file не найден, пропускаем патчинг (возможно, используется новая версия llama.cpp)"
+        }
 
     - name: Build llama-server
       shell: cmd
@@ -48,6 +53,7 @@ jobs:
         mkdir build
         cd build
         cmake .. ^
+          -G "MinGW Makefiles" ^
           -DCMAKE_BUILD_TYPE=Release ^
           -DGGML_BUILD_SERVER=ON ^
           -DCMAKE_SYSTEM_VERSION=6.1 ^
@@ -57,8 +63,7 @@ jobs:
           -DGGML_CPU_HAS_AVX=OFF ^
           -DGGML_CPU_HAS_AVX2=OFF ^
           -DLLAMA_CURL=OFF ^
-          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" ^
-          -G "MinGW Makefiles"
+          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
         mingw32-make -C . -j4 llama-server
 
     - name: Upload Artifact
